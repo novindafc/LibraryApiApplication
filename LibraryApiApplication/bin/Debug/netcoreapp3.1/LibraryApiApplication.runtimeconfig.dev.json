@@ -1,0 +1,8 @@
+{
+  "runtimeOptions": {
+    "additionalProbingPaths": [
+      "C:\\Users\\bimasakti\\.dotnet\\store\\|arch|\\|tfm|",
+      "C:\\Users\\bimasakti\\.nuget\\packages"
+    ]
+  }
+}

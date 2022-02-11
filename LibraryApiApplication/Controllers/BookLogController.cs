@@ -1,5 +1,9 @@
+using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
+using System.Net;
+using System.Net.Mail;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -22,6 +26,8 @@ namespace LibraryApiApplication.Controllers
 
         // GET: api/BookLog
         [HttpGet]
+        [Route("[action]")]
+        [Route("api/BookLog/GetBookLog")]
         public async Task<ActionResult<IEnumerable<BookLog>>> GetBookLog()
         {
             var result = await _context.BookLog.ToListAsync();
@@ -32,7 +38,9 @@ namespace LibraryApiApplication.Controllers
         }
 
         // GET: api/BookLog/5
-        [HttpGet("{id}")]
+        [HttpGet]
+        [Route("[action]")]
+        [Route("api/BookLog/GetBookLogById")]
         public async Task<ActionResult<BookLog>> GetBookLogById(int id)
         {
             var booklog = await _context.BookLog.FindAsync(id);
@@ -50,10 +58,12 @@ namespace LibraryApiApplication.Controllers
             });;
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditBookLog(int id, BookLog booklog)
+        [Route("[action]")]
+        [Route("api/BookLog/EditBookLog")]
+        public async Task<IActionResult> EditBookLog(BookLog booklog)
         {
-            booklog.Id = id;
-
+            int id = booklog.Id;
+            
             _context.Entry(booklog).State = EntityState.Modified;
 
             try
@@ -82,67 +92,43 @@ namespace LibraryApiApplication.Controllers
                 data = booklog
             });
         }
-
-
-        // PUT: api/BookLog/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBookLog(int id, BookLog booklog)
+        
+        
+        
+        // POST: api/BookLog
+        [HttpPost]
+        [Route("[action]")]
+        [Route("api/BookLog/AddBookLog")]
+        public async Task<ActionResult<BookLog>> AddBookLog(BookLog booklog)
         {
-            if (id != booklog.Id)
+            var book = await _context.Book.FindAsync(booklog.BookId);
+            if (book == null || book.Remains == 0)
             {
-                return new JsonResult(new
-                {
-                    status = "bad request",
+                return new JsonResult(new {
+                    status = "Book Not Found"
                 });
             }
-
-            _context.Entry(booklog).State = EntityState.Modified;
-
-            try
+            else
             {
+                book.Remains = book.Remains - 1;
+                _context.Entry(book).State = EntityState.Modified;
+                _context.BookLog.Add(booklog);
                 await _context.SaveChangesAsync();
+                // var result = CreatedAtAction("AddBookLog", new { id = booklog.Id }, booklog);
+
+                return new JsonResult(new {
+                    status = "success",
+                    data = booklog,
+                });
+                
             }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BookLogExists(id))
-                {
-                    return new JsonResult(new
-                    {
-                        status = "not found",
-                    });
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return new JsonResult(new
-            {
-                status = "no content",
-            });
-        }
-
-        // POST: api/BookLog
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPost]
-        public async Task<ActionResult<BookLog>> AddBook(BookLog booklog)
-        {
-            _context.BookLog.Add(booklog);
-            await _context.SaveChangesAsync();
-            // var result = CreatedAtAction("AddBookLog", new { id = booklog.Id }, booklog);
-
-            return new JsonResult(new {
-                status = "success",
-                data = booklog
-            });
+            
         }
 
         // DELETE: api/BookLog/5
-        [HttpDelete("{id}")]
+        [HttpDelete]
+        [Route("[action]")]
+        [Route("api/BookLog/DeleteBookLog")]
         public async Task<ActionResult<BookLog>> DeleteBookLog(int id)
         {
             var booklog = await _context.BookLog.FindAsync(id);
@@ -157,7 +143,35 @@ namespace LibraryApiApplication.Controllers
             await _context.SaveChangesAsync();
 
             return new JsonResult(new {
-                status = "success"
+                status = "delete success",
+                data = booklog
+            });
+        }
+        
+        [HttpPost]
+        [Route("[action]")]
+        [Route("api/BookLog/DeleteBookLog")]
+        public async Task<ActionResult<BookLog>> EmailBookLog(BookLog booklog)
+        {
+            if (booklog == null)
+            {
+                return new JsonResult(new {
+                    status = "Not Found"
+                });
+            }
+            var book = await _context.Book.FindAsync(booklog.BookId);
+            var member = await _context.Member.FindAsync(booklog.MemberId);
+            string format = "yyyy.MM.dd HH:mm:ss:ffff";
+            string date = booklog.EndTime.ToString(format, DateTimeFormatInfo.InvariantInfo);
+            string body = getHtml(member.Name, book.Title, date);
+            Email(body, member.Email);
+
+            _context.BookLog.Remove(booklog);
+            await _context.SaveChangesAsync();
+
+            return new JsonResult(new {
+                status = "delete success",
+                data = booklog
             });
         }
 
@@ -165,5 +179,63 @@ namespace LibraryApiApplication.Controllers
         {
             return _context.BookLog.Any(e => e.Id == id);
         }
+        
+          public static string getHtml(string name, string book, string time)
+        {
+            try
+            {
+                string messageBody = "<font>Virtual Library Remainder </font><br><br>";
+                string htmlTableStart = "<table style=\"border-collapse:collapse; text-align:center;\" >";
+                string htmlTableEnd = "</table>";
+                string htmlHeaderRowStart = "<tr style=\"background-color:#6FA1D2; color:#ffffff;\">";
+                string htmlHeaderRowEnd = "</tr>";
+                string htmlTrStart = "<tr style=\"color:#555555;\">";
+                string htmlTrEnd = "</tr>";
+                string htmlTdStart =
+                    "<td style=\" border-color:#5c87b2; border-style:solid; border-width:thin; padding: 5px;\">";
+                string htmlTdEnd = "</td>";
+                messageBody += htmlTableStart;
+                messageBody += htmlHeaderRowStart;
+                messageBody += htmlTrStart + "Dear, our Member " + name +
+                               " ! This is Virtual Library, we would like to inform you that this is your last day for borrowing book. Please return book tomorrow!" +
+                               htmlTdEnd;
+                messageBody += htmlTrStart + "Time :" + time + ". " + htmlTdEnd;
+                messageBody += htmlTrStart + "Member Name : " + name + htmlTdEnd;
+                messageBody += htmlTrStart + "Book : " + book + htmlTdEnd;
+                messageBody += htmlTrStart + "If you already return the book please ignore this message! " + htmlTdEnd;
+                messageBody += htmlHeaderRowEnd;
+
+                messageBody = messageBody + htmlTableEnd;
+                return messageBody; 
+            }
+            catch (Exception ex)
+            {
+                return null;
+            }
+
+        }
+
+        public static void Email(string htmlString, string toEmail) {  
+            try {  
+                MailMessage message = new MailMessage();  
+                SmtpClient smtp = new SmtpClient();  
+                message.From = new MailAddress("libraryvirtual77@gmail.com");  
+                message.To.Add(new MailAddress(toEmail));  
+                message.Subject = "Virtual Book Reminder";  
+                message.IsBodyHtml = true; //to make message body as html  
+                message.Body = htmlString;  
+                smtp.Port = 587;  
+                smtp.Host = "smtp.gmail.com"; //for gmail host  
+                smtp.EnableSsl = true;  
+                smtp.UseDefaultCredentials = false;  
+                smtp.Credentials = new NetworkCredential("libraryvirtual77@gmail.com", "Mom190465");  
+                smtp.DeliveryMethod = SmtpDeliveryMethod.Network;  
+                smtp.Send(message);  
+            } catch (Exception) {}  
+        }
+        
+        
+        
+        
     }
 }

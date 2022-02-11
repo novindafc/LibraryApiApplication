@@ -23,7 +23,9 @@ namespace LibraryApiApplication.Controllers
 
         // GET: api/Member
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Member>>> GetBook()
+        [Route("[action]")]
+        [Route("api/Member/GetMember")]
+        public async Task<ActionResult<IEnumerable<Member>>> GetMember()
         {
             var result = await _context.Member.ToListAsync();
             return new JsonResult(new {
@@ -33,7 +35,9 @@ namespace LibraryApiApplication.Controllers
         }
 
         // GET: api/Member/5
-        [HttpGet("{id}")]
+        [HttpGet]
+        [Route("[action]")]
+        [Route("api/Member/GetMemberById")]
         public async Task<ActionResult<Member>> GetMemberById(int id)
         {
             var member = await _context.Member.FindAsync(id);
@@ -51,9 +55,11 @@ namespace LibraryApiApplication.Controllers
             });;
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditMember(int id, Member member)
+        [Route("[action]")]
+        [Route("api/Member/EditMember")]
+        public async Task<IActionResult> EditMember(Member member)
         {
-            member.Id = id;
+            int id = member.Id;
 
             _context.Entry(member).State = EntityState.Modified;
 
@@ -84,52 +90,11 @@ namespace LibraryApiApplication.Controllers
             });
         }
 
-
-        // PUT: api/Member/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutMember(int id, Member member)
-        {
-            if (id != member.Id)
-            {
-                return new JsonResult(new
-                {
-                    status = "bad request",
-                });
-            }
-
-            _context.Entry(member).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!MemberExists(id))
-                {
-                    return new JsonResult(new
-                    {
-                        status = "not found",
-                    });
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return new JsonResult(new
-            {
-                status = "no content",
-            });
-        }
-
+        
         // POST: api/Member
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
+        [Route("[action]")]
+        [Route("api/Member/AddMember")]
         public async Task<ActionResult<Member>> AddMember(Member member)
         {
             _context.Member.Add(member);
@@ -143,7 +108,9 @@ namespace LibraryApiApplication.Controllers
         }
 
         // DELETE: api/Member/5
-        [HttpDelete("{id}")]
+        [HttpDelete]
+        [Route("[action]")]
+        [Route("api/Member/DeleteMember")]
         public async Task<ActionResult<Member>> DeleteMember(int id)
         {
             var member = await _context.Member.FindAsync(id);
@@ -158,7 +125,8 @@ namespace LibraryApiApplication.Controllers
             await _context.SaveChangesAsync();
 
             return new JsonResult(new {
-                status = "success"
+                status = "delete success",
+                data = member
             });
         }
 

@@ -22,6 +22,8 @@ namespace LibraryApiApplication.Controllers
 
         // GET: api/Book
         [HttpGet]
+        [Route("[action]")]
+        [Route("api/Book/GetBook")]
         public async Task<ActionResult<IEnumerable<Book>>> GetBook()
         {
             var result = await _context.Book.ToListAsync();
@@ -32,7 +34,9 @@ namespace LibraryApiApplication.Controllers
         }
 
         // GET: api/Book/5
-        [HttpGet("{id}")]
+        [HttpGet]
+        [Route("[action]")]
+        [Route("api/Book/GetBookById")]
         public async Task<ActionResult<Book>> GetBookById(int id)
         {
             var book = await _context.Book.FindAsync(id);
@@ -47,12 +51,14 @@ namespace LibraryApiApplication.Controllers
             return new JsonResult(new {
                 status = "success",
                 data = book
-            });;
+            });
         }
         [HttpPut("{id}")]
-        public async Task<IActionResult> EditBook(int id, Book book)
+        [Route("[action]")]
+        [Route("api/Employee/EditBook")]
+        public async Task<IActionResult> EditBook(Book book)
         {
-            book.Id = id;
+            int id = book.Id;
 
             _context.Entry(book).State = EntityState.Modified;
 
@@ -83,52 +89,11 @@ namespace LibraryApiApplication.Controllers
             });
         }
 
+        
 
-        // PUT: api/Book/5
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
-        [HttpPut("{id}")]
-        public async Task<IActionResult> PutBook(int id, Book book)
-        {
-            if (id != book.Id)
-            {
-                return new JsonResult(new
-                {
-                    status = "bad request",
-                });
-            }
-
-            _context.Entry(book).State = EntityState.Modified;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException)
-            {
-                if (!BookExists(id))
-                {
-                    return new JsonResult(new
-                    {
-                        status = "not found",
-                    });
-                }
-                else
-                {
-                    throw;
-                }
-            }
-
-            return new JsonResult(new
-            {
-                status = "no content",
-            });
-        }
-
-        // POST: api/Book
-        // To protect from overposting attacks, enable the specific properties you want to bind to, for
-        // more details, see https://go.microsoft.com/fwlink/?linkid=2123754.
         [HttpPost]
+        [Route("[action]")]
+        [Route("api/Book/AddBook")]
         public async Task<ActionResult<Book>> AddBook(Book book)
         {
             _context.Book.Add(book);
@@ -142,7 +107,9 @@ namespace LibraryApiApplication.Controllers
         }
 
         // DELETE: api/Book/5
-        [HttpDelete("{id}")]
+        [HttpDelete]
+        [Route("[action]")]
+        [Route("api/Book/DeleteBook")]
         public async Task<ActionResult<Book>> DeleteBook(int id)
         {
             var book = await _context.Book.FindAsync(id);
@@ -157,7 +124,8 @@ namespace LibraryApiApplication.Controllers
             await _context.SaveChangesAsync();
 
             return new JsonResult(new {
-                status = "success"
+                status = "delete success",
+                data = book
             });
         }
 

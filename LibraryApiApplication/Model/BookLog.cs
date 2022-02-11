@@ -2,7 +2,7 @@ using System;
 
 namespace LibraryApiApplication.Model
 {
-    public class BookLog:ModelBase
+    public class BookLog : ModelBase
     {
         public DateTime StartTime{ get; set; }
         public DateTime EndTime{ get; set; }
